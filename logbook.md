@@ -1566,7 +1566,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - **Date:** 2026-10-04
 - **Phase:** Phase 2 — Household Memory + Inventory
-- **Status:** TESTED
+- **Status:** COMPLETED
 - **Type:** Feature / Infrastructure
 - **Performed by:** AI Agent
 - **Objective:** Add the first Phase 2 backend milestone: validated household/member schemas, MongoDB persistence, and minimal create/retrieve endpoints without implementing inventory or later-phase behavior.
@@ -1610,9 +1610,9 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
-- **Commit:** Pending commit after final diff review.
+- **Commit:** `09d5e9681bb2ae19372035703a5fbb2b15ce082c` (`feat: add household creation and retrieval foundation`).
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; `origin/main` verified at the feature commit. The completion-status logbook update is committed and pushed separately.
 
 ### Issues / Notes
 
