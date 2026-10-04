@@ -1622,3 +1622,65 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Stop after this first Phase 2 milestone; wait for instructions before implementing additional household or inventory functionality.
+
+## [SL-006] Household Member Constraints and Preferences
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 2 — Household Memory + Inventory
+- **Status:** TESTED
+- **Type:** Feature / Validation
+- **Performed by:** AI Agent
+- **Objective:** Extend the SL-005 household/member data foundation with explicit hard-constraint and soft-preference fields, deterministic validation/classification, and member food-profile updates.
+
+### Work Performed
+
+- Added structured member fields for allergies, prohibited foods, dietary restrictions, dislikes, preferred foods, spice level, texture preferences, and cuisine preferences.
+- Kept the SL-005 `constraints`, `preferences`, `texture`, and `spiceLevel` fields readable and writable for compatibility; the deterministic classifier places these legacy fields in the corresponding hard or soft category without guessing from their values.
+- Added deterministic validation: food labels are trimmed, must be non-empty, and duplicates are removed case-insensitively while preserving first occurrence. A label cannot be both a hard constraint and a soft preference. Spice level is restricted to `low`, `medium`, or `high`.
+- Added `POST /api/households/{householdId}/members` to add a member and `PUT /api/households/{householdId}/members/{personId}/food-profile`, backed by atomic MongoDB updates. Existing household create/retrieve routes remain available.
+- Added API, repository, validation, and classification tests using a fake repository or mocked MongoDB collection; no Atlas credentials are required.
+- Updated README with the member fields, validation behavior, and endpoint.
+- No AI reasoning, recipe matching, inventory, or other future-phase features were implemented.
+
+### Files Changed
+
+- `README.md`
+- `backend/app/api/households.py`
+- `backend/app/models/household.py`
+- `backend/app/repositories/households.py`
+- `backend/app/services/__init__.py`
+- `backend/app/services/member_classification.py`
+- `backend/tests/test_household_repository.py`
+- `backend/tests/test_households.py`
+- `backend/tests/test_member_classification.py`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 31 tests passed, including household/member create/retrieve/update, not-found, invalid values, duplicate normalization, hard/soft separation, deterministic classification, and mocked MongoDB persistence.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; TypeScript compilation and Vite production build.
+- Pylance syntax checks on the changed/new backend Python modules and tests — PASS.
+- `git diff --check` — PASS.
+- The existing Starlette `TestClient` deprecation warning remains. Pylance workspace diagnostics report PyMongo imports as unresolved, while the backend virtual environment lists PyMongo 4.18.2 as installed and the backend tests pass.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** Hard constraints and soft preferences are explicit, separately typed groups; classification is deterministic and never infers safety semantics from free text. Existing SL-005 endpoints and legacy member fields are preserved. Persistence remains in the repository and reuses the configured MongoDB client. No secrets or real Atlas dependency are used in tests.
+
+### Git
+
+- **Commit:** Pending commit after final diff review.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- `PUT` replaces the member's structured food profile; omitted lists clear to empty and omitted spice level becomes unset.
+- The existing legacy fields remain for API/data compatibility; new clients should use the explicit structured fields.
+
+### Next Step
+
+- Stop after SL-006; wait for instruction before implementing another Phase 2 milestone.

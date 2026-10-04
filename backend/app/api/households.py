@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pymongo.errors import PyMongoError
 
 from app.database import MongoDatabase, get_database
-from app.models.household import Household, HouseholdCreate
+from app.models.household import (
+    Household,
+    HouseholdCreate,
+    HouseholdMember,
+    HouseholdMemberCreate,
+    HouseholdMemberFoodProfileUpdate,
+)
 from app.repositories.households import HouseholdRepository
 
 router = APIRouter(prefix="/households", tags=["households"])
@@ -54,3 +60,59 @@ def get_household(
             detail="Household not found",
         )
     return household
+
+
+@router.post(
+    "/{household_id}/members",
+    response_model=HouseholdMember,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_household_member(
+    household_id: UUID,
+    member_data: HouseholdMemberCreate,
+    repository: Annotated[HouseholdRepository, Depends(get_household_repository)],
+) -> HouseholdMember:
+    try:
+        member = repository.add_member(household_id, member_data)
+    except PyMongoError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is unavailable",
+        ) from None
+
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Household not found",
+        )
+    return member
+
+
+@router.put(
+    "/{household_id}/members/{person_id}/food-profile",
+    response_model=HouseholdMember,
+)
+def update_household_member_food_profile(
+    household_id: UUID,
+    person_id: UUID,
+    profile: HouseholdMemberFoodProfileUpdate,
+    repository: Annotated[HouseholdRepository, Depends(get_household_repository)],
+) -> HouseholdMember:
+    try:
+        member = repository.update_member_food_profile(
+            household_id,
+            person_id,
+            profile,
+        )
+    except PyMongoError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is unavailable",
+        ) from None
+
+    if member is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Household member not found",
+        )
+    return member
