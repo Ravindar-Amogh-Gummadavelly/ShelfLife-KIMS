@@ -1484,3 +1484,70 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Stop after this foundation milestone; wait for instructions before beginning another Phase 1 task.
+
+## [SL-004] MongoDB Atlas Connectivity Foundation
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 1 — Foundation + Deployment
+- **Status:** TESTED
+- **Type:** Infrastructure / Test
+- **Performed by:** AI Agent
+- **Objective:** Add environment-backed MongoDB configuration, a reusable client/database module, and a real database health ping endpoint without adding application collections or data models.
+
+### Work Performed
+
+- Added configuration and database connectivity modules.
+- Added a database ping health endpoint and configuration/database unit tests using mocks.
+- Updated dependency declarations and developer configuration documentation.
+- Installed `pymongo[srv]` and `pydantic-settings` in the ignored backend virtual environment.
+- Verified the environment contains no MongoDB credentials and no local `.env` file without reading or printing any credential values; real Atlas connectivity remains pending.
+- The first mocked database test run exposed that `Mock` does not support the driver's database-selection subscription; the tests were corrected to use `MagicMock` and rerun.
+- Verified the running API returns HTTP 200 for basic health and HTTP 503 with a generic message for database health when configuration is missing.
+- Completed self-review; no application collections, schemas, or later-phase features were added.
+- Commit and push are pending.
+
+### Files Changed
+
+- `.env.example` — verified existing MongoDB placeholders; no secret values added or changes required.
+- `README.md`
+- `backend/app/api/health.py`
+- `backend/app/config.py`
+- `backend/app/database.py`
+- `backend/app/main.py`
+- `backend/requirements.txt`
+- `backend/tests/test_config.py`
+- `backend/tests/test_database.py`
+- `backend/tests/test_health.py`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pip install -r requirements-dev.txt` — PASS.
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 10 tests passed, including environment settings, local dotenv parsing, database selection/ping/close, client reuse, endpoint success/failure, and missing configuration. The initial mock issue was corrected before the passing run.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; TypeScript compilation and Vite build.
+- Pylance syntax checks — PASS for new configuration, database, and health test files.
+- `.env` ignore check — PASS; `.env.example` contains only empty placeholder assignments.
+- Live backend health check without credentials — basic health HTTP 200; database health HTTP 503 with a generic configuration error.
+- Real Atlas ping — NOT RUN; no local `.env` or MongoDB environment variables were available.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** No household, inventory, AI, authentication, or application collection functionality is in scope. Database errors use generic HTTP 503 messages and do not return connection details.
+
+### Git
+
+- **Commit:** Pending.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- No MongoDB URI or credentials are recorded in this logbook or README.
+- Real Atlas connectivity remains pending until local credentials are securely configured.
+
+### Next Step
+
+- Complete final diff and secret review, then commit and push after all checks pass.

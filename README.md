@@ -17,7 +17,7 @@ logbook.md                Development history
 
 ## Development setup
 
-Requirements: Node.js with npm, and Python 3.12 or newer.
+Requirements: Node.js with npm, Python 3.12 or newer, and MongoDB Atlas for database-backed development.
 
 ### Frontend
 
@@ -40,6 +40,7 @@ python -m uvicorn app.main:app --reload
 ```
 
 The health endpoint is available at `http://127.0.0.1:8000/api/health`.
+With valid MongoDB configuration, `http://127.0.0.1:8000/api/health/db` performs a database ping.
 
 ### Backend tests
 
@@ -49,10 +50,22 @@ From the `backend/` directory, with the virtual environment activated:
 python -m pytest
 ```
 
-## Environment variables
+## MongoDB configuration
 
-`.env.example` lists placeholder names for future configuration. Copy it to a local `.env` only when a feature requires those settings, then fill values locally. Real `.env` files are ignored by Git. The current foundation does not read environment variables or connect to external services.
+Copy the root template, then edit `.env` locally:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Set these backend variables:
+
+- `MONGODB_URI` — your MongoDB Atlas connection string.
+- `MONGODB_DATABASE` — the database name ShelfLife should select.
+- `VITE_API_BASE_URL` — optional frontend API base URL; local Vite development proxies `/api` to FastAPI by default.
+
+Keep real credentials only in the local `.env` or your deployment's secret configuration; `.env` is ignored by Git. The application does not create collections or store application data yet.
 
 ## Future work
 
-Database integration, household and inventory features, AI capabilities, and deployment are planned for later milestones and are not part of the current application.
+Household and inventory features, AI capabilities, and deployment are planned for later milestones and are not part of the current application.
