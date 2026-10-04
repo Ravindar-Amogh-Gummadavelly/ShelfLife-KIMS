@@ -1997,7 +1997,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - **Date:** 2026-10-05
 - **Phase:** Phase 1 — Foundation maintenance / Phase 2 — Runtime verification
-- **Status:** TESTED
+- **Status:** COMPLETED
 - **Type:** Runtime Verification
 - **Performed by:** AI Agent
 - **Objective:** Independently verify the current checkout's frontend, FastAPI, and Atlas path, including the complete household/member/inventory browser workflow, without mocked API responses.
@@ -2032,6 +2032,7 @@ If they disagree, investigate and correct the discrepancy.
 - Real isolated-browser household/member/profile/reload/inventory/consumption/history/delete flow — PASS, no mocked API.
 - Atlas test-data cleanup and verification — PASS.
 - `.env` ignore/tracking and `git diff --check` — PASS.
+- GitHub Actions run `37226711693` for verification commit `a8ad08e3ca804d3cb68eb49deef965cb3c0246b5` — PASS.
 
 ### Review
 
@@ -2041,9 +2042,10 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
-- **Commit:** Pending.
+- **Verification-record commit:** `a8ad08e3ca804d3cb68eb49deef965cb3c0246b5` (`docs: record SL-012 runtime verification`).
+- **Completion-record commit:** Finalized in a follow-up documentation commit.
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; verification and completion records are pushed to `origin/main`.
 
 ### Issues / Notes
 
@@ -2052,4 +2054,4 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Next Step
 
-- Commit and push this verification record, verify remote synchronization, and stop pending further instructions.
+- Stop after this runtime verification and wait for further instructions.
