@@ -45,3 +45,34 @@ export interface MemberFoodProfile {
 export interface AddHouseholdMemberRequest extends MemberFoodProfile {
   name: string
 }
+
+export type InventoryStatus = 'FRESH' | 'USE_SOON' | 'EXPIRING' | 'EXPIRED'
+
+export interface InventoryItem {
+  inventoryId: string
+  householdId: string
+  ingredient: string
+  category: string
+  quantity: number
+  unit: string
+  purchaseDate: string | null
+  expiryDate: string | null
+  storage: string | null
+  notes: string | null
+  status: InventoryStatus
+  consumptionHistory: {
+    quantity: number
+    consumedAt: string
+  }[]
+}
+
+export interface InventoryInput {
+  ingredient: string
+  category: string
+  quantity: number
+  unit: string
+  purchaseDate: string | null
+  expiryDate: string | null
+  storage: string | null
+  notes: string | null
+}

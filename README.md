@@ -1,19 +1,19 @@
 # ShelfLife
 
-ShelfLife is a household kitchen companion designed to help people manage food around their household's needs. The current application includes a React frontend for household setup and member food profiles, plus a FastAPI API backed by MongoDB Atlas.
+ShelfLife is a household kitchen companion designed to help people manage food around their household's needs. The current application includes a React frontend for household setup, member food profiles, and inventory management, plus a FastAPI API backed by MongoDB Atlas.
 
 ## Project structure
 
 ```text
 frontend/                 React, Vite, and TypeScript application
-  src/App.tsx             Household setup, Kitchen Home, and household screens
+  src/App.tsx             Household setup, Kitchen Home, and inventory screens
   src/services/           API client
   src/types/              API response types
 backend/                  FastAPI application and tests
   app/models/             API/data schemas
   app/repositories/        MongoDB persistence
   app/services/           Deterministic member profile classification
-  app/api/                 Health and household routes
+  app/api/                 Health, household, and inventory routes
 .github/workflows/        Continuous integration
 Dockerfile                Multi-stage frontend/backend production image
 render.yaml               Render Blueprint for the production web service
@@ -68,8 +68,20 @@ allows adding members or updating their food profiles. The household ID is
 remembered in this browser's local storage so the Kitchen Home can be reopened
 on a later visit; this is not authentication or access control.
 
-Inventory is visibly marked as coming soon and does not yet provide inventory
-management.
+### Inventory
+
+Open Inventory from Kitchen Home to add, view, edit, or remove household
+ingredients. Each item records its category, amount and unit, optional purchase
+and expiry dates, optional storage location, and notes. Use the consumption
+control to subtract an amount while retaining a timestamped consumption history.
+All inventory changes are scoped to the current household and persisted in
+MongoDB's `inventory_items` collection.
+
+Freshness is calculated from the current date rather than stored: past expiry
+dates are `EXPIRED`, today through three days ahead are `EXPIRING`, four through
+seven days ahead are `USE_SOON`, and later dates (or no expiry date) are
+`FRESH`. These labels are visibility cues; ShelfLife does not yet predict
+spoilage or recommend recipes.
 
 ### Backend tests
 
@@ -108,10 +120,11 @@ Set these backend variables:
 - `MONGODB_DATABASE` — the database name ShelfLife should select.
 - `VITE_API_BASE_URL` — optional frontend API base URL; local Vite development proxies `/api` to FastAPI by default.
 
-Keep real credentials only in the local `.env` or your deployment's secret configuration; `.env` is ignored by Git. Household records are stored in MongoDB's `households` collection. Inventory management and authentication are future work.
+Keep real credentials only in the local `.env` or your deployment's secret configuration; `.env` is ignored by Git. Household records are stored in MongoDB's `households` collection.
 
 ## Future work
 
-Inventory features and AI capabilities are planned for later milestones and
-are not part of the current application. The Render deployment configuration
-is prepared, but a live service has not yet been provisioned.
+Household memory, waste prediction, meal planning, AI capabilities, and
+authentication are planned for later milestones and are not part of the current
+application. The Render deployment configuration is prepared, but a live service
+has not yet been provisioned.

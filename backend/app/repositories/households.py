@@ -32,6 +32,15 @@ class HouseholdRepository:
         self._collection.insert_one(document)
         return household
 
+    def exists(self, household_id: UUID) -> bool:
+        return (
+            self._collection.find_one(
+                {"_id": str(household_id)},
+                {"_id": 1},
+            )
+            is not None
+        )
+
     def add_member(
         self,
         household_id: UUID,

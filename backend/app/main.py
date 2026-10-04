@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.health import router as health_router
 from app.api.households import router as households_router
+from app.api.inventory import router as inventory_router
 from app.database import MongoDatabase
 
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
@@ -30,6 +31,7 @@ async def lifespan(application: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(title="ShelfLife API", lifespan=lifespan)
 app.include_router(health_router, prefix="/api")
 app.include_router(households_router, prefix="/api")
+app.include_router(inventory_router, prefix="/api")
 
 FRONTEND_ASSETS = FRONTEND_DIST / "assets"
 if FRONTEND_ASSETS.is_dir():

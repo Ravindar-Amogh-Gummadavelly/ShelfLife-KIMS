@@ -2,13 +2,20 @@ import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import {
   addHouseholdMember,
   ApiError,
+  consumeInventoryItem,
   createHousehold,
+  createInventoryItem,
+  deleteInventoryItem,
+  getInventory,
   getHousehold,
+  updateInventoryItem,
   updateMemberFoodProfile,
 } from './services/api'
 import type {
   Household,
   HouseholdMember,
+  InventoryInput,
+  InventoryItem,
   MemberFoodProfile,
   SpiceLevel,
 } from './types/api'
@@ -358,7 +365,12 @@ function App() {
             onCancel={() => navigate(memberMode === 'first' ? 'kitchen' : 'household')}
           />
         )}
-        {page === 'inventory' && <InventoryPlaceholder onBack={() => navigate('kitchen')} />}
+        {page === 'inventory' && (
+          <InventoryPage
+            householdId={household.householdId}
+            onBack={() => navigate('kitchen')}
+          />
+        )}
       </main>
       <footer className="app-footer">
         <span>ShelfLife</span>
@@ -433,10 +445,10 @@ function KitchenHome({
         </section>
         <button className="overview-card inventory-card" onClick={onInventory}>
           <div className="card-icon pantry-icon" aria-hidden="true">◌</div>
-          <p className="eyebrow">Coming soon</p>
+          <p className="eyebrow">Your pantry</p>
           <h2>Your pantry, at a glance</h2>
-          <p>Inventory tools are not available yet. This is where that future work will live.</p>
-          <span className="text-button">About inventory <span aria-hidden="true">→</span></span>
+          <p>Keep track of what is on hand, what is expiring, and what you have used.</p>
+          <span className="text-button">Open inventory <span aria-hidden="true">→</span></span>
         </button>
       </div>
     </div>
@@ -742,22 +754,619 @@ function TagInput({
   )
 }
 
-function InventoryPlaceholder({ onBack }: { onBack: () => void }) {
+type InventoryFormState = { [K in keyof InventoryInput]: string }
+
+const inventoryCategories = [
+  'produce',
+  'dairy',
+  'protein',
+  'grains',
+  'pantry',
+  'other',
+]
+
+function sortInventory(items: InventoryItem[]): InventoryItem[] {
+  return [...items].sort((left, right) => {
+    if (left.expiryDate === null) return right.expiryDate === null ? 0 : 1
+    if (right.expiryDate === null) return -1
+    return left.expiryDate.localeCompare(right.expiryDate)
+  })
+}
+
+function newInventoryForm(): InventoryFormState {
+  return {
+    ingredient: '',
+    category: 'produce',
+    quantity: '',
+    unit: '',
+    purchaseDate: '',
+    expiryDate: '',
+    storage: '',
+    notes: '',
+  }
+}
+
+function inventoryFormFromItem(item: InventoryItem): InventoryFormState {
+  return {
+    ingredient: item.ingredient,
+    category: item.category,
+    quantity: String(item.quantity),
+    unit: item.unit,
+    purchaseDate: item.purchaseDate ?? '',
+    expiryDate: item.expiryDate ?? '',
+    storage: item.storage ?? '',
+    notes: item.notes ?? '',
+  }
+}
+
+function inventoryErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) return error.message
+  return 'Something went wrong while updating inventory. Please try again.'
+}
+
+function InventoryPage({
+  householdId,
+  onBack,
+}: {
+  householdId: string
+  onBack: () => void
+}) {
+  const [items, setItems] = useState<InventoryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [formError, setFormError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [busyItemId, setBusyItemId] = useState<string | null>(null)
+  const [reloadCount, setReloadCount] = useState(0)
+
+  useEffect(() => {
+    let active = true
+    getInventory(householdId)
+      .then((inventory) => {
+        if (!active) return
+        setItems(sortInventory(inventory))
+        setLoadError('')
+      })
+      .catch((requestError: unknown) => {
+        if (active) setLoadError(inventoryErrorMessage(requestError))
+      })
+      .finally(() => {
+        if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [householdId, reloadCount])
+
+  function retryLoad() {
+    setLoading(true)
+    setLoadError('')
+    setReloadCount((count) => count + 1)
+  }
+
+  function openNewItemForm() {
+    setEditingItem(null)
+    setFormError('')
+    setFormOpen(true)
+  }
+
+  function openEditItemForm(item: InventoryItem) {
+    setEditingItem(item)
+    setFormError('')
+    setFormOpen(true)
+  }
+
+  async function saveItem(input: InventoryInput) {
+    setFormError('')
+    setNotice('')
+    setSaving(true)
+    try {
+      if (editingItem) {
+        const updated = await updateInventoryItem(
+          householdId,
+          editingItem.inventoryId,
+          input,
+        )
+        setItems((current) =>
+          sortInventory(
+            current.map((item) =>
+              item.inventoryId === updated.inventoryId ? updated : item,
+            ),
+          ),
+        )
+        setNotice(`${updated.ingredient} was updated.`)
+      } else {
+        const created = await createInventoryItem(householdId, input)
+        setItems((current) => sortInventory([...current, created]))
+        setNotice(`${created.ingredient} was added to inventory.`)
+      }
+      setFormOpen(false)
+      setEditingItem(null)
+    } catch (requestError) {
+      setFormError(inventoryErrorMessage(requestError))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function removeItem(item: InventoryItem) {
+    setNotice('')
+    setBusyItemId(item.inventoryId)
+    try {
+      await deleteInventoryItem(householdId, item.inventoryId)
+      setItems((current) =>
+        current.filter((entry) => entry.inventoryId !== item.inventoryId),
+      )
+      setDeleteTarget(null)
+      setNotice(`${item.ingredient} was removed from inventory.`)
+    } catch (requestError) {
+      setLoadError(inventoryErrorMessage(requestError))
+    } finally {
+      setBusyItemId(null)
+    }
+  }
+
+  async function recordConsumption(item: InventoryItem, quantity: number) {
+    setNotice('')
+    setBusyItemId(item.inventoryId)
+    try {
+      const updated = await consumeInventoryItem(
+        householdId,
+        item.inventoryId,
+        quantity,
+      )
+      setItems((current) =>
+        current.map((entry) =>
+          entry.inventoryId === updated.inventoryId ? updated : entry,
+        ),
+      )
+      setNotice(
+        updated.quantity === 0
+          ? `${item.ingredient} was used up.`
+          : `Recorded ${quantity} ${item.unit} used from ${item.ingredient}.`,
+      )
+    } catch (requestError) {
+      setLoadError(inventoryErrorMessage(requestError))
+    } finally {
+      setBusyItemId(null)
+    }
+  }
+
+  const availableItems = items.filter((item) => item.quantity > 0)
+  const usedUpItems = items.filter((item) => item.quantity === 0)
+  const useSoonCount = availableItems.filter(
+    (item) => item.status === 'USE_SOON' || item.status === 'EXPIRING',
+  ).length
+  const expiredCount = availableItems.filter((item) => item.status === 'EXPIRED').length
+
   return (
-    <div className="content-column">
-      <button className="back-link" onClick={onBack}>← Back</button>
-      <section className="empty-card inventory-empty">
-        <div className="empty-mark pantry-empty-mark" aria-hidden="true">◌</div>
-        <p className="eyebrow">A future shelf</p>
-        <h1>Your inventory is coming soon.</h1>
-        <p>
-          Pantry tracking is not available yet. For now, ShelfLife is helping
-          you get the household details in place first.
-        </p>
-        <span className="coming-soon-pill">Coming soon</span>
+    <div className="content-column inventory-page">
+      <button className="back-link" onClick={onBack}>← Kitchen Home</button>
+      <div className="section-heading inventory-heading">
+        <div>
+          <p className="eyebrow">What’s on your shelves</p>
+          <h1>Kitchen inventory</h1>
+          <p>Keep quantities and dates current so nothing gets forgotten.</p>
+        </div>
+        <button className="button button-primary" onClick={openNewItemForm}>
+          <span aria-hidden="true">＋</span> Add an item
+        </button>
+      </div>
+
+      {loadError && (
+        <div>
+          <ErrorNotice message={loadError} />
+          {!loading && (
+            <button className="text-button retry-button" onClick={retryLoad}>
+              Retry loading inventory
+            </button>
+          )}
+        </div>
+      )}
+      {notice && <p className="success-notice" role="status">{notice}</p>}
+
+      <section className="inventory-summary" aria-label="Inventory summary">
+        <div>
+          <span className="summary-number">{loading ? '—' : availableItems.length}</span>
+          <span className="summary-label">items in stock</span>
+        </div>
+        <div>
+          <span className="summary-number use-soon-number">{loading ? '—' : useSoonCount}</span>
+          <span className="summary-label">use soon</span>
+        </div>
+        <div>
+          <span className="summary-number expired-number">{loading ? '—' : expiredCount}</span>
+          <span className="summary-label">past expiry</span>
+        </div>
       </section>
+
+      {formOpen && (
+        <InventoryForm
+          item={editingItem}
+          saving={saving}
+          error={formError}
+          onSave={saveItem}
+          onCancel={() => {
+            setFormOpen(false)
+            setEditingItem(null)
+          }}
+        />
+      )}
+
+      {loading ? (
+        <section className="empty-card inventory-loading" aria-live="polite">
+          <p className="eyebrow">One moment</p>
+          <h2>Loading your inventory…</h2>
+        </section>
+      ) : availableItems.length === 0 && usedUpItems.length === 0 ? (
+        <section className="empty-card inventory-empty">
+          <div className="empty-mark pantry-empty-mark" aria-hidden="true">◌</div>
+          <p className="eyebrow">A good place to begin</p>
+          <h2>Your shelves are ready to remember.</h2>
+          <p>Add ingredients with their amounts and dates. ShelfLife will keep expiry status visible here.</p>
+          <button className="button button-primary" onClick={openNewItemForm}>
+            Add your first ingredient
+          </button>
+        </section>
+      ) : (
+        <div className="inventory-sections">
+          <section className="inventory-list-section">
+            <div className="inventory-list-heading">
+              <div>
+                <p className="eyebrow">In the kitchen</p>
+                <h2>On hand <span>{availableItems.length}</span></h2>
+              </div>
+              <p>Sorted by the nearest known expiry date.</p>
+            </div>
+            {availableItems.length === 0 ? (
+              <p className="inventory-empty-note">No ingredients currently in stock.</p>
+            ) : (
+              <div className="inventory-grid">
+                {availableItems.map((item) => (
+                  <InventoryCard
+                    key={item.inventoryId}
+                    item={item}
+                    busy={busyItemId === item.inventoryId}
+                    confirmingDelete={deleteTarget === item.inventoryId}
+                    onEdit={() => openEditItemForm(item)}
+                    onDeleteRequest={() => setDeleteTarget(item.inventoryId)}
+                    onDeleteCancel={() => setDeleteTarget(null)}
+                    onDelete={() => void removeItem(item)}
+                    onConsume={(quantity) => void recordConsumption(item, quantity)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+          {usedUpItems.length > 0 && (
+            <section className="inventory-list-section used-up-section">
+              <div className="inventory-list-heading">
+                <div>
+                  <p className="eyebrow">Consumption history</p>
+                  <h2>Used up <span>{usedUpItems.length}</span></h2>
+                </div>
+              </div>
+              <div className="inventory-grid">
+                {usedUpItems.map((item) => (
+                  <InventoryCard
+                    key={item.inventoryId}
+                    item={item}
+                    busy={busyItemId === item.inventoryId}
+                    confirmingDelete={deleteTarget === item.inventoryId}
+                    onEdit={() => openEditItemForm(item)}
+                    onDeleteRequest={() => setDeleteTarget(item.inventoryId)}
+                    onDeleteCancel={() => setDeleteTarget(null)}
+                    onDelete={() => void removeItem(item)}
+                    onConsume={() => undefined}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </div>
   )
+}
+
+function InventoryForm({
+  item,
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: {
+  item: InventoryItem | null
+  saving: boolean
+  error: string
+  onSave: (input: InventoryInput) => Promise<void>
+  onCancel: () => void
+}) {
+  const [values, setValues] = useState<InventoryFormState>(
+    item ? inventoryFormFromItem(item) : newInventoryForm(),
+  )
+
+  function update<K extends keyof InventoryFormState>(
+    key: K,
+    value: InventoryFormState[K],
+  ) {
+    setValues((current) => ({ ...current, [key]: value }))
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    void onSave({
+      ...values,
+      quantity: Number(values.quantity),
+      purchaseDate: values.purchaseDate || null,
+      expiryDate: values.expiryDate || null,
+      storage: values.storage || null,
+      notes: values.notes.trim() || null,
+    })
+  }
+
+  return (
+    <form className="inventory-form" onSubmit={submit}>
+      <div className="inventory-form-heading">
+        <div>
+          <p className="eyebrow">{item ? 'Keep it up to date' : 'Add to the shelves'}</p>
+          <h2>{item ? `Edit ${item.ingredient}` : 'Add an ingredient'}</h2>
+        </div>
+        <button type="button" className="icon-button" onClick={onCancel} disabled={saving}>
+          Close
+        </button>
+      </div>
+      <div className="inventory-fields-grid">
+        <label className="field-label" htmlFor="inventory-ingredient">
+          Ingredient
+          <input
+            id="inventory-ingredient"
+            value={values.ingredient}
+            onChange={(event) => update('ingredient', event.target.value)}
+            placeholder="e.g. Spinach"
+            maxLength={120}
+            required
+          />
+        </label>
+        <label className="field-label" htmlFor="inventory-category">
+          Category
+          <select
+            id="inventory-category"
+            value={values.category}
+            onChange={(event) => update('category', event.target.value)}
+            required
+          >
+            {inventoryCategories.map((category) => (
+              <option key={category} value={category}>
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field-label" htmlFor="inventory-quantity">
+          Quantity
+          <input
+            id="inventory-quantity"
+            type="number"
+            min="0.000001"
+            step="any"
+            value={values.quantity}
+            onChange={(event) => update('quantity', event.target.value)}
+            required
+          />
+        </label>
+        <label className="field-label" htmlFor="inventory-unit">
+          Unit
+          <input
+            id="inventory-unit"
+            value={values.unit}
+            onChange={(event) => update('unit', event.target.value)}
+            placeholder="e.g. g, kg, pieces"
+            maxLength={30}
+            required
+          />
+        </label>
+        <label className="field-label" htmlFor="inventory-purchase-date">
+          Purchase date <span className="optional-label">Optional</span>
+          <input
+            id="inventory-purchase-date"
+            type="date"
+            value={values.purchaseDate}
+            onChange={(event) => update('purchaseDate', event.target.value)}
+          />
+        </label>
+        <label className="field-label" htmlFor="inventory-expiry-date">
+          Expiry date <span className="optional-label">Optional</span>
+          <input
+            id="inventory-expiry-date"
+            type="date"
+            min={values.purchaseDate || undefined}
+            value={values.expiryDate}
+            onChange={(event) => update('expiryDate', event.target.value)}
+          />
+        </label>
+        <label className="field-label" htmlFor="inventory-storage">
+          Storage location <span className="optional-label">Optional</span>
+          <select
+            id="inventory-storage"
+            value={values.storage}
+            onChange={(event) => update('storage', event.target.value)}
+          >
+            <option value="">Not set</option>
+            <option value="pantry">Pantry</option>
+            <option value="refrigerator">Refrigerator</option>
+            <option value="freezer">Freezer</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label className="field-label inventory-notes-field" htmlFor="inventory-notes">
+          Notes <span className="optional-label">Optional</span>
+          <textarea
+            id="inventory-notes"
+            value={values.notes ?? ''}
+            onChange={(event) => update('notes', event.target.value)}
+            maxLength={500}
+            rows={2}
+            placeholder="Anything useful to remember"
+          />
+        </label>
+      </div>
+      <ErrorNotice message={error} />
+      <div className="form-actions inventory-form-actions">
+        <button type="button" className="button button-quiet" onClick={onCancel} disabled={saving}>
+          Cancel
+        </button>
+        <button className="button button-primary" disabled={saving}>
+          {saving ? 'Saving…' : item ? 'Save changes' : 'Add to inventory'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function InventoryCard({
+  item,
+  busy,
+  confirmingDelete,
+  onEdit,
+  onDeleteRequest,
+  onDeleteCancel,
+  onDelete,
+  onConsume,
+}: {
+  item: InventoryItem
+  busy: boolean
+  confirmingDelete: boolean
+  onEdit: () => void
+  onDeleteRequest: () => void
+  onDeleteCancel: () => void
+  onDelete: () => void
+  onConsume: (quantity: number) => void
+}) {
+  const [consumeQuantity, setConsumeQuantity] = useState('')
+  const isUsedUp = item.quantity === 0
+
+  function submitConsumption(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const quantity = Number(consumeQuantity)
+    if (Number.isFinite(quantity) && quantity > 0) {
+      onConsume(quantity)
+      setConsumeQuantity('')
+    }
+  }
+
+  return (
+    <article className={`inventory-card-item ${isUsedUp ? 'inventory-card-used' : ''}`}>
+      <div className="inventory-item-top">
+        <span className={`inventory-status status-${isUsedUp ? 'used' : item.status.toLowerCase()}`}>
+          {isUsedUp ? 'Used up' : item.status.replace('_', ' ')}
+        </span>
+        <span className="inventory-category">{item.category}</span>
+      </div>
+      <div className="inventory-item-title">
+        <div>
+          <h3>{item.ingredient}</h3>
+          <p className="inventory-amount">
+            {item.quantity} {item.unit}
+          </p>
+        </div>
+        <div className="inventory-item-actions">
+          <button className="icon-button" onClick={onEdit} disabled={busy}>
+            Edit
+          </button>
+          <button
+            className="icon-button icon-button-danger"
+            onClick={onDeleteRequest}
+            disabled={busy}
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+      <dl className="inventory-details">
+        <div>
+          <dt>Expiry</dt>
+          <dd>{item.expiryDate ? formatInventoryDate(item.expiryDate) : 'Not set'}</dd>
+        </div>
+        <div>
+          <dt>Storage</dt>
+          <dd>{item.storage ?? 'Not set'}</dd>
+        </div>
+        {item.purchaseDate && (
+          <div>
+            <dt>Purchased</dt>
+            <dd>{formatInventoryDate(item.purchaseDate)}</dd>
+          </div>
+        )}
+      </dl>
+      {item.notes && <p className="inventory-item-notes">{item.notes}</p>}
+      {!isUsedUp && (
+        <form className="consume-form" onSubmit={submitConsumption}>
+          <label htmlFor={`consume-${item.inventoryId}`}>Record amount used</label>
+          <div>
+            <input
+              id={`consume-${item.inventoryId}`}
+              type="number"
+              min="0.000001"
+              max={item.quantity}
+              step="any"
+              value={consumeQuantity}
+              onChange={(event) => setConsumeQuantity(event.target.value)}
+              required
+            />
+            <button
+              type="submit"
+              className="text-button"
+              disabled={busy || !consumeQuantity}
+            >
+              {busy ? 'Saving…' : 'Record use'}
+            </button>
+          </div>
+        </form>
+      )}
+      {item.consumptionHistory.length > 0 && (
+        <details className="consumption-history">
+          <summary>
+            Consumption history ({item.consumptionHistory.length})
+          </summary>
+          <ul>
+            {item.consumptionHistory.map((record, index) => (
+              <li key={`${record.consumedAt}-${index}`}>
+                {record.quantity} {item.unit} · {formatInventoryDate(record.consumedAt.slice(0, 10))}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {confirmingDelete && (
+        <div className="delete-confirmation" role="group" aria-label={`Remove ${item.ingredient}`}>
+          <p>Remove {item.ingredient} and its consumption history?</p>
+          <button className="button button-quiet" onClick={onDeleteCancel} disabled={busy}>
+            Keep item
+          </button>
+          <button className="button button-danger" onClick={onDelete} disabled={busy}>
+            {busy ? 'Removing…' : 'Remove item'}
+          </button>
+        </div>
+      )}
+    </article>
+  )
+}
+
+function formatInventoryDate(value: string): string {
+  const date = new Date(`${value.slice(0, 10)}T12:00:00`)
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
 }
 
 export default App

@@ -1858,3 +1858,67 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Proceed to Phase 2 inventory; the CI regression is resolved.
+
+## [SL-010] Household Inventory Management
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 2 — Household Memory + Inventory
+- **Status:** IN PROGRESS
+- **Type:** Feature / Backend and Frontend
+- **Performed by:** AI Agent
+- **Objective:** Add household-scoped inventory records, freshness visibility, and consumption tracking without implementing recipe, AI, or other later-phase capabilities.
+
+### Work Performed
+
+- Added validated inventory and consumption schemas, with freshness computed deterministically from the expiry date: `EXPIRED` before today, `EXPIRING` today through three days ahead, `USE_SOON` four through seven days ahead, and `FRESH` later or when no expiry date is set.
+- Added MongoDB persistence in the separate `inventory_items` collection, household scoping, expiry ordering, and a household index created once per database instance.
+- Added API operations to create, list, update, and delete household inventory items and to consume a quantity atomically while appending timestamped consumption history.
+- Replaced the Kitchen Home inventory placeholder with an inventory screen for creating/editing/removing ingredients, viewing computed freshness, recording consumption, and inspecting used-up items and consumption history.
+- Updated README with current inventory behavior and freshness windows, and updated the Phase 2 status in `master.md`.
+- No AI, recipes, inventory prediction, authentication, or other future-phase functionality was added.
+
+### Files Changed
+
+- `README.md`
+- `master.md`
+- `backend/app/api/inventory.py`
+- `backend/app/database.py`
+- `backend/app/main.py`
+- `backend/app/models/inventory.py`
+- `backend/app/repositories/households.py`
+- `backend/app/repositories/inventory.py`
+- `backend/tests/test_database.py`
+- `backend/tests/test_inventory_api.py`
+- `backend/tests/test_inventory_models.py`
+- `backend/tests/test_inventory_repository.py`
+- `frontend/src/App.css`
+- `frontend/src/App.tsx`
+- `frontend/src/services/api.ts`
+- `frontend/src/types/api.ts`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 67 tests passed, including inventory model, API, repository, and database-index coverage. Tests use deterministic fakes/mocks and do not require Atlas credentials.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; TypeScript compilation and Vite production build.
+- `git diff --check` — PASS before documentation finalization.
+- Browser interaction — PARTIAL; a temporary mocked API accepted household creation and the frontend reached member setup. The integrated browser became unresponsive before the inventory UI flow could be completed.
+- Real Atlas inventory writes — NOT RUN; automated inventory tests do not access the personal Atlas cluster.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** Inventory data is stored separately from household documents; item reads/writes are scoped by household ID. Consumption uses a conditional atomic quantity decrement and refuses quantities exceeding remaining stock. Freshness is derived at response time and is not persisted. Frontend API responses are runtime-validated. Browser-level verification could not be completed because the integrated browser session became unresponsive.
+
+### Git
+
+- **Commit:** Pending.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- Freshness windows are product defaults documented in README; no spoilage prediction is implied.
+- Browser-level interaction and remote CI verification remain limitations; they do not affect the passing deterministic API/repository tests or frontend lint/build.

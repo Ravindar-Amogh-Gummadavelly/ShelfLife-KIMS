@@ -2388,7 +2388,7 @@ Current status:
 
 ```text
 Phase 1: IN PROGRESS — local application foundation is complete; live Render deployment remains unverified.
-Phase 2: IN PROGRESS — household/member foundation is complete; inventory functionality remains.
+Phase 2: IN PROGRESS — household/member and inventory foundations are implemented; later memory and meal-planning capabilities remain.
 Phase 3: NOT STARTED
 Phase 4: NOT STARTED
 Phase 5: NOT STARTED
