@@ -1392,3 +1392,90 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Continue to Phase 1 only after receiving further instructions.
+
+## [SL-003] Phase 1 Application Foundation
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 1 — Foundation + Deployment
+- **Status:** IN PROGRESS
+- **Type:** Feature / Infrastructure
+- **Performed by:** AI Agent
+- **Objective:** Create the minimal React/Vite/TypeScript frontend shell, FastAPI health API and test, environment template, developer setup documentation, and foundation CI without implementing later-phase features.
+
+### Work Performed
+
+- Added the initial frontend and backend application foundation.
+- Updated `.gitignore` to allow the safe `.env.example` template while continuing to ignore environment files containing local configuration.
+- Added a minimal GitHub Actions workflow for frontend builds and backend tests.
+- Installed frontend and backend dependencies and generated `frontend/package-lock.json`.
+- Created an ignored `backend/.venv` and installed the backend requirements there for project-isolated development.
+- Verified frontend lint, TypeScript compilation, Vite production build, Vite development startup, and browser rendering.
+- Verified FastAPI imports and starts, `GET /api/health` returns HTTP 200 with `{"status":"ok"}`, the Vite `/api` proxy forwards successfully, and the pytest health test passes.
+- A first `npm ci` retry encountered a Windows file lock because the Vite development server was using a native module. After stopping the verified local dev-server processes, `npm ci` succeeded and lint/build passed again.
+- Confirmed `.env.example` is trackable, actual `.env` files are absent, and the app output/build/dependency/cache paths are ignored.
+- Final diff review is complete; commit and push are pending.
+
+### Files Changed
+
+- `.env.example`
+- `.github/workflows/ci.yml`
+- `.gitignore`
+- `README.md`
+- `backend/app/__init__.py`
+- `backend/app/api/__init__.py`
+- `backend/app/api/health.py`
+- `backend/app/main.py`
+- `backend/requirements-dev.txt`
+- `backend/requirements.txt`
+- `backend/tests/test_health.py`
+- `frontend/index.html`
+- `frontend/package-lock.json`
+- `frontend/package.json`
+- `frontend/src/App.css`
+- `frontend/src/App.tsx`
+- `frontend/src/index.css`
+- `frontend/src/main.tsx`
+- `frontend/src/services/api.ts`
+- `frontend/src/types/api.ts`
+- `frontend/tsconfig.app.json`
+- `frontend/tsconfig.json`
+- `frontend/tsconfig.node.json`
+- `frontend/vite.config.ts`
+
+### Testing
+
+- `npm install` — PASS; 0 reported vulnerabilities.
+- `npm ci` — PASS after stopping the running dev server.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; includes `tsc -b` and Vite production build.
+- Installed `backend/requirements-dev.txt` into `backend/.venv` — PASS.
+- `python -m pytest` from `backend/` in `.venv` — PASS; 1 test passed.
+- FastAPI import — PASS.
+- Uvicorn startup from `.venv` — PASS.
+- Live `GET http://127.0.0.1:8000/api/health` — HTTP 200, `{"status":"ok"}`.
+- Vite startup and browser rendering — PASS; title, app name, and subtitle displayed.
+- Vite `/api/health` proxy — HTTP 200, `{"status":"ok"}`.
+- Pylance syntax checks — no syntax errors in backend application or test files.
+- Ignore checks — `.env` and `.env.*` remain ignored, `.env.example` is not ignored, and generated build/dependency/cache paths are ignored. Project documentation remains trackable.
+- Secret review found no real `.env` files; `.env.example` contains only placeholder variable names.
+- `git diff --cached --check` — PASS.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** Scope is limited to the foundation milestone; no database, AI, sponsor integration, authentication, household, or inventory features are included. One upstream Starlette deprecation warning is emitted by `TestClient`; the health test passes.
+
+### Git
+
+- **Commit:** Pending.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- No real secrets or `.env` files are added.
+
+### Next Step
+
+- Generate the frontend scaffold, run the requested checks, review the diff, then commit and push if all validations pass.
