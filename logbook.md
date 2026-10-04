@@ -1743,3 +1743,67 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Stop after SL-007; wait for instruction before implementing another Phase 2 milestone.
+
+## [SL-008] Render Production Packaging
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 1 — Foundation + Deployment
+- **Status:** BLOCKED
+- **Type:** Infrastructure / Deployment
+- **Performed by:** AI Agent
+- **Objective:** Prepare one same-origin production deployment of the existing Vite frontend and FastAPI API on Render, without changing the application database or exposing secrets.
+
+### Work Performed
+
+- Added a multi-stage Dockerfile that builds the frontend and packages its output with the existing FastAPI application.
+- Added FastAPI root/index and `/assets` serving when a production Vite build is present. API routers remain mounted ahead of static routes; the root returns an explicit 404 when a frontend build is absent.
+- Added a Render Blueprint web service using the Dockerfile, the existing basic health endpoint, and secret environment variables supplied through Render rather than source control.
+- Excluded local environment files, credentials, virtual environments, dependency trees, and build output from the Docker build context.
+- Added a CI job to build the production container on GitHub Actions.
+- Updated README deployment instructions and corrected the stale current-phase status in `master.md`.
+- Did not modify MongoDB behavior or add application/product features.
+
+### Files Changed
+
+- `.dockerignore`
+- `.github/workflows/ci.yml`
+- `Dockerfile`
+- `README.md`
+- `backend/app/main.py`
+- `backend/tests/test_frontend_serving.py`
+- `master.md`
+- `render.yaml`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 33 tests passed.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; TypeScript and Vite production build.
+- Render Blueprint YAML parsed locally and checked for Docker runtime, `/api/health`, and the two required environment-variable keys.
+- Live local FastAPI smoke checks — PASS; `/` returned the generated frontend document, both emitted Vite assets returned HTTP 200, and `/api/health` returned HTTP 200.
+- `git diff --check` — PASS.
+- `.env` is ignored by Git and excluded by `.dockerignore`; no environment-file values were read or recorded.
+- Docker image build — NOT RUN: Docker CLI is installed, but its Linux engine/daemon is unavailable in this environment. The new GitHub Actions container-build job has not yet been observed on the remote.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** Single-service same-origin serving avoids introducing cross-origin configuration and keeps API behavior intact. Runtime path assumptions were verified by serving the locally built frontend and its fingerprinted assets from FastAPI. Docker engine build and Render-side Blueprint validation/deployment remain unverified.
+
+### Git
+
+- **Commit:** Pending.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- A live Render service cannot be provisioned from this environment because no Render account/CLI session is configured. Atlas credentials must be entered in Render's secret environment settings during service setup; they are not stored in the Blueprint.
+- Docker image verification is also pending until a Docker daemon or the new GitHub Actions container-build result is available.
+- Phase 1 remains IN PROGRESS until the live deployment is created and its frontend/API/Atlas path is verified. This deployment blocker does not prevent work on independent Phase 2 inventory functionality.
+
+### Next Step
+
+- Continue with the earliest independent incomplete product capability, Phase 2 inventory, while keeping live Render deployment explicitly blocked.

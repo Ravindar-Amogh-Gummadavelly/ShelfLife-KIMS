@@ -2384,11 +2384,11 @@ Stop after this phase is working.
 
 # 52. CURRENT DEVELOPMENT STATUS
 
-At the beginning of the project:
+Current status:
 
 ```text
-Phase 1: NOT STARTED
-Phase 2: NOT STARTED
+Phase 1: IN PROGRESS — local application foundation is complete; live Render deployment remains unverified.
+Phase 2: IN PROGRESS — household/member foundation is complete; inventory functionality remains.
 Phase 3: NOT STARTED
 Phase 4: NOT STARTED
 Phase 5: NOT STARTED
@@ -2397,16 +2397,8 @@ Phase 7: NOT STARTED
 Phase 8: NOT STARTED
 ```
 
-Update this section as development progresses.
-
-Example:
-
-```text
-Phase 1: COMPLETE
-Phase 2: IN PROGRESS
-Phase 3: NOT STARTED
-...
-```
+Update this section as development progresses. Do not mark a phase complete
+until its stated completion criteria have been verified.
 
 ---
 

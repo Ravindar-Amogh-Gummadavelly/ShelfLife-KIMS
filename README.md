@@ -15,6 +15,8 @@ backend/                  FastAPI application and tests
   app/services/           Deterministic member profile classification
   app/api/                 Health and household routes
 .github/workflows/        Continuous integration
+Dockerfile                Multi-stage frontend/backend production image
+render.yaml               Render Blueprint for the production web service
 .env.example              Placeholder environment variable names
 master.md                 Product and architecture specification
 logbook.md                Development history
@@ -77,6 +79,21 @@ From the `backend/` directory, with the virtual environment activated:
 python -m pytest
 ```
 
+## Production deployment
+
+The root `Dockerfile` builds the frontend and packages it with FastAPI in one
+image. FastAPI serves the built frontend at `/`, the API at `/api`, and
+fingerprinted Vite assets at `/assets`. Local Vite development continues to
+proxy `/api` to the backend.
+
+`render.yaml` defines a Render Blueprint web service using this Dockerfile.
+Create a Blueprint from the repository in Render and provide `MONGODB_URI` and
+`MONGODB_DATABASE` when prompted. Keep the MongoDB URI in Render's secret
+environment configuration; it must not be put in the Blueprint or source
+control. Render uses `/api/health` as its service health check. A live Render
+deployment still requires connecting the repository in a Render account and
+configuring the Atlas secret.
+
 ## MongoDB configuration
 
 Copy the root template, then edit `.env` locally:
@@ -95,4 +112,6 @@ Keep real credentials only in the local `.env` or your deployment's secret confi
 
 ## Future work
 
-Inventory features, AI capabilities, and deployment are planned for later milestones and are not part of the current application.
+Inventory features and AI capabilities are planned for later milestones and
+are not part of the current application. The Render deployment configuration
+is prepared, but a live service has not yet been provisioned.
