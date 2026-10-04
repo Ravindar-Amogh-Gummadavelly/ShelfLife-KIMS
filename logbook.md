@@ -1784,7 +1784,8 @@ If they disagree, investigate and correct the discrepancy.
 - Live local FastAPI smoke checks — PASS; `/` returned the generated frontend document, both emitted Vite assets returned HTTP 200, and `/api/health` returned HTTP 200.
 - `git diff --check` — PASS.
 - `.env` is ignored by Git and excluded by `.dockerignore`; no environment-file values were read or recorded.
-- Docker image build — NOT RUN: Docker CLI is installed, but its Linux engine/daemon is unavailable in this environment. The new GitHub Actions container-build job has not yet been observed on the remote.
+- Local Docker image build — NOT RUN: Docker CLI is installed, but its Linux engine/daemon is unavailable in this environment.
+- GitHub Actions run `37215741910` for commit `42ecf8400601a2e201159350ec61af776580423e` — production-container build PASS and frontend lint/build PASS; backend job FAILED on invalid-request cases because CI has no MongoDB configuration. The validation-order defect is addressed separately in SL-009; CI must be rerun against that fix.
 
 ### Review
 
@@ -1794,16 +1795,64 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
+- **Commit:** `42ecf8400601a2e201159350ec61af776580423e` (`chore: prepare ShelfLife Render deployment`).
+- **Branch:** `main`.
+- **GitHub push:** YES; `origin/main` verified at the deployment commit.
+
+### Issues / Notes
+
+- A live Render service cannot be provisioned from this environment because no Render account/CLI session is configured. Atlas credentials must be entered in Render's secret environment settings during service setup; they are not stored in the Blueprint.
+- The remote container build has passed, but actual Render Blueprint validation/service creation and the production deployment path remain unverified.
+- Phase 1 remains IN PROGRESS until the live deployment is created and its frontend/API/Atlas path is verified. This deployment blocker does not prevent work on independent Phase 2 inventory functionality.
+
+### Next Step
+
+- Continue with the earliest independent incomplete product capability, Phase 2 inventory, while keeping live Render deployment explicitly blocked.
+
+## [SL-009] Defer Database Resolution Until Validated Requests
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 1 — CI Reliability / Phase 2 — Household API
+- **Status:** IN PROGRESS
+- **Type:** Bug Fix / Test
+- **Performed by:** AI Agent
+- **Objective:** Correct the CI-confirmed behavior where missing MongoDB configuration masked household request validation errors with HTTP 503.
+
+### Work Performed
+
+- Changed household API dependency resolution to return a repository factory and defer MongoDB settings/client access until a validated route handler actually needs persistence.
+- Preserved explicit database-unavailable behavior for valid persistence requests.
+- Added regression tests that prove malformed input returns HTTP 422 without touching database configuration and valid input still surfaces HTTP 503 when the database configuration is unavailable.
+- Changed fake repository dependency overrides to supply the deferred repository factory.
+
+### Files Changed
+
+- `backend/app/api/households.py`
+- `backend/tests/test_households.py`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 35 tests passed.
+- Pylance diagnostics reviewed; the backend virtual environment imports PyMongo successfully, while workspace-selected Pylance still reports its previously documented unresolved PyMongo import. Two unused test-parameter diagnostics were corrected.
+- Remote GitHub Actions rerun against this fix — Pending.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** IN PROGRESS
+- **Review notes:** Lazy repository construction keeps persistence separated from routes while ensuring FastAPI request validation is not masked by unavailable database configuration.
+
+### Git
+
 - **Commit:** Pending.
 - **Branch:** `main`.
 - **GitHub push:** Pending.
 
 ### Issues / Notes
 
-- A live Render service cannot be provisioned from this environment because no Render account/CLI session is configured. Atlas credentials must be entered in Render's secret environment settings during service setup; they are not stored in the Blueprint.
-- Docker image verification is also pending until a Docker daemon or the new GitHub Actions container-build result is available.
-- Phase 1 remains IN PROGRESS until the live deployment is created and its frontend/API/Atlas path is verified. This deployment blocker does not prevent work on independent Phase 2 inventory functionality.
+- The root cause was confirmed from failed GitHub Actions logs: invalid household creates and malformed household IDs received 503 in CI because the repository dependency loaded settings before request validation completed. Local `.env` availability had masked the failure in earlier test runs.
 
 ### Next Step
 
-- Continue with the earliest independent incomplete product capability, Phase 2 inventory, while keeping live Render deployment explicitly blocked.
+- Commit and push the fix, confirm CI passes without MongoDB credentials, then proceed to Phase 2 inventory.

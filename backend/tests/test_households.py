@@ -1,9 +1,11 @@
 from collections.abc import Iterator
 from uuid import UUID
 
+from fastapi import HTTPException, Request
 import pytest
 from fastapi.testclient import TestClient
 
+import app.api.households as households_api
 from app.api.households import get_household_repository
 from app.main import app
 from app.models.household import (
@@ -69,7 +71,7 @@ class FakeHouseholdRepository:
 @pytest.fixture
 def household_repository() -> Iterator[FakeHouseholdRepository]:
     repository = FakeHouseholdRepository()
-    app.dependency_overrides[get_household_repository] = lambda: repository
+    app.dependency_overrides[get_household_repository] = lambda: lambda: repository
     try:
         yield repository
     finally:
@@ -304,6 +306,44 @@ def test_create_household_rejects_invalid_request(
     response = client.post("/api/households", json=payload)
 
     assert response.status_code == 422
+
+
+def test_invalid_household_request_does_not_load_database(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_if_database_is_loaded(request: Request) -> None:
+        assert request.method == "POST"
+        raise AssertionError("Database must not be loaded for invalid input")
+
+    monkeypatch.setattr(
+        households_api,
+        "get_database",
+        fail_if_database_is_loaded,
+    )
+
+    response = client.post("/api/households", json={"name": ""})
+
+    assert response.status_code == 422
+
+
+def test_valid_household_request_surfaces_database_configuration_failure(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def database_is_unavailable(request: Request) -> None:
+        assert request.method == "POST"
+        raise HTTPException(
+            status_code=503,
+            detail="Database configuration is unavailable",
+        )
+
+    monkeypatch.setattr(households_api, "get_database", database_is_unavailable)
+
+    response = client.post("/api/households", json={"name": "My Household"})
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Database configuration is unavailable"}
 
 
 @pytest.mark.usefixtures("household_repository")

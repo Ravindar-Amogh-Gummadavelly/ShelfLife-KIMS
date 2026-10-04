@@ -1,10 +1,11 @@
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pymongo.errors import PyMongoError
 
-from app.database import MongoDatabase, get_database
+from app.database import get_database
 from app.models.household import (
     Household,
     HouseholdCreate,
@@ -18,9 +19,9 @@ router = APIRouter(prefix="/households", tags=["households"])
 
 
 def get_household_repository(
-    database: Annotated[MongoDatabase, Depends(get_database)],
-) -> HouseholdRepository:
-    return HouseholdRepository(database.database)
+    request: Request,
+) -> Callable[[], HouseholdRepository]:
+    return lambda: HouseholdRepository(get_database(request).database)
 
 
 @router.post(
@@ -30,9 +31,13 @@ def get_household_repository(
 )
 def create_household(
     household_data: HouseholdCreate,
-    repository: Annotated[HouseholdRepository, Depends(get_household_repository)],
+    repository_factory: Annotated[
+        Callable[[], HouseholdRepository],
+        Depends(get_household_repository),
+    ],
 ) -> Household:
     try:
+        repository = repository_factory()
         return repository.create(household_data)
     except PyMongoError:
         raise HTTPException(
@@ -44,9 +49,13 @@ def create_household(
 @router.get("/{household_id}", response_model=Household)
 def get_household(
     household_id: UUID,
-    repository: Annotated[HouseholdRepository, Depends(get_household_repository)],
+    repository_factory: Annotated[
+        Callable[[], HouseholdRepository],
+        Depends(get_household_repository),
+    ],
 ) -> Household:
     try:
+        repository = repository_factory()
         household = repository.get_by_id(household_id)
     except PyMongoError:
         raise HTTPException(
@@ -70,9 +79,13 @@ def get_household(
 def add_household_member(
     household_id: UUID,
     member_data: HouseholdMemberCreate,
-    repository: Annotated[HouseholdRepository, Depends(get_household_repository)],
+    repository_factory: Annotated[
+        Callable[[], HouseholdRepository],
+        Depends(get_household_repository),
+    ],
 ) -> HouseholdMember:
     try:
+        repository = repository_factory()
         member = repository.add_member(household_id, member_data)
     except PyMongoError:
         raise HTTPException(
@@ -96,9 +109,13 @@ def update_household_member_food_profile(
     household_id: UUID,
     person_id: UUID,
     profile: HouseholdMemberFoodProfileUpdate,
-    repository: Annotated[HouseholdRepository, Depends(get_household_repository)],
+    repository_factory: Annotated[
+        Callable[[], HouseholdRepository],
+        Depends(get_household_repository),
+    ],
 ) -> HouseholdMember:
     try:
+        repository = repository_factory()
         member = repository.update_member_food_profile(
             household_id,
             person_id,
