@@ -1814,7 +1814,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - **Date:** 2026-10-04
 - **Phase:** Phase 1 — CI Reliability / Phase 2 — Household API
-- **Status:** IN PROGRESS
+- **Status:** COMPLETED
 - **Type:** Bug Fix / Test
 - **Performed by:** AI Agent
 - **Objective:** Correct the CI-confirmed behavior where missing MongoDB configuration masked household request validation errors with HTTP 503.
@@ -1863,7 +1863,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - **Date:** 2026-10-04
 - **Phase:** Phase 2 — Household Memory + Inventory
-- **Status:** IN PROGRESS
+- **Status:** COMPLETED
 - **Type:** Feature / Backend and Frontend
 - **Performed by:** AI Agent
 - **Objective:** Add household-scoped inventory records, freshness visibility, and consumption tracking without implementing recipe, AI, or other later-phase capabilities.
@@ -1903,6 +1903,8 @@ If they disagree, investigate and correct the discrepancy.
 - `npm run lint` — PASS.
 - `npm run build` — PASS; TypeScript compilation and Vite production build.
 - `git diff --check` — PASS before documentation finalization.
+- GitHub Actions run `37224226277` — initial backend job failed because the missing-household test omitted its fake-repository fixture and reached database configuration. Added the fixture in the follow-up test-only commit; the failure did not require an API behavior change.
+- GitHub Actions run `37224353214` — PASS after the fixture correction; backend tests, frontend lint/build, and production-container build all succeeded without MongoDB credentials.
 - Browser interaction — PARTIAL; a temporary mocked API accepted household creation and the frontend reached member setup. The integrated browser became unresponsive before the inventory UI flow could be completed.
 - Real Atlas inventory writes — NOT RUN; automated inventory tests do not access the personal Atlas cluster.
 
@@ -1914,11 +1916,11 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
-- **Commit:** Pending.
+- **Commits:** `b837e3a0bb6beec647a79177e382427d0e7f240a` (`feat: add household inventory management`); `0cba44c98c1177e5ac6d860bebad789766a975e3` (`test: isolate inventory household check from MongoDB`).
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; both implementation/test commits and the completion record were pushed to `origin/main`. Commit `0cba44c98c1177e5ac6d860bebad789766a975e3` passed all GitHub Actions jobs.
 
 ### Issues / Notes
 
 - Freshness windows are product defaults documented in README; no spoilage prediction is implied.
-- Browser-level interaction and remote CI verification remain limitations; they do not affect the passing deterministic API/repository tests or frontend lint/build.
+- Full browser-level inventory interaction was not verified because the integrated browser became unresponsive during testing; the backend suite, frontend lint/build, and remote CI passed. Real Atlas inventory writes were not exercised.
