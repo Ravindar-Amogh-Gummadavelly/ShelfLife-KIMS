@@ -1,11 +1,12 @@
 # ShelfLife
 
-ShelfLife is an AI-powered household kitchen companion designed to help people manage food around their household's needs. The current application includes a minimal frontend shell, health-check API, and household/member create, retrieve, and food-profile update APIs.
+ShelfLife is a household kitchen companion designed to help people manage food around their household's needs. The current application includes a React frontend for household setup and member food profiles, plus a FastAPI API backed by MongoDB Atlas.
 
 ## Project structure
 
 ```text
 frontend/                 React, Vite, and TypeScript application
+  src/App.tsx             Household setup, Kitchen Home, and household screens
   src/services/           API client
   src/types/              API response types
 backend/                  FastAPI application and tests
@@ -56,6 +57,18 @@ Use `PUT /api/households/{householdId}/members/{personId}/food-profile` to repla
 those fields. Spice level accepts `low`, `medium`, or `high`; list entries are
 trimmed, non-empty, and de-duplicated case-insensitively.
 
+### Frontend household setup
+
+Start the frontend and backend, then open the Vite URL. Create a household,
+then add a member now or later. Enter hard constraints and soft preferences
+in their separate sections. The Household screen displays saved profiles and
+allows adding members or updating their food profiles. The household ID is
+remembered in this browser's local storage so the Kitchen Home can be reopened
+on a later visit; this is not authentication or access control.
+
+Inventory is visibly marked as coming soon and does not yet provide inventory
+management.
+
 ### Backend tests
 
 From the `backend/` directory, with the virtual environment activated:
@@ -78,7 +91,7 @@ Set these backend variables:
 - `MONGODB_DATABASE` — the database name ShelfLife should select.
 - `VITE_API_BASE_URL` — optional frontend API base URL; local Vite development proxies `/api` to FastAPI by default.
 
-Keep real credentials only in the local `.env` or your deployment's secret configuration; `.env` is ignored by Git. Household records are stored in MongoDB's `households` collection. Inventory persistence and household-management features beyond create/retrieve/update of member food profiles are future work.
+Keep real credentials only in the local `.env` or your deployment's secret configuration; `.env` is ignored by Git. Household records are stored in MongoDB's `households` collection. Inventory management and authentication are future work.
 
 ## Future work
 
