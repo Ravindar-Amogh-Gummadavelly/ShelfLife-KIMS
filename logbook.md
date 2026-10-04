@@ -1785,7 +1785,8 @@ If they disagree, investigate and correct the discrepancy.
 - `git diff --check` — PASS.
 - `.env` is ignored by Git and excluded by `.dockerignore`; no environment-file values were read or recorded.
 - Local Docker image build — NOT RUN: Docker CLI is installed, but its Linux engine/daemon is unavailable in this environment.
-- GitHub Actions run `37215741910` for commit `42ecf8400601a2e201159350ec61af776580423e` — production-container build PASS and frontend lint/build PASS; backend job FAILED on invalid-request cases because CI has no MongoDB configuration. The validation-order defect is addressed separately in SL-009; CI must be rerun against that fix.
+- GitHub Actions run `37215741910` for commit `42ecf8400601a2e201159350ec61af776580423e` — production-container build PASS and frontend lint/build PASS; backend job FAILED on invalid-request cases because CI has no MongoDB configuration. The validation-order defect was corrected in SL-009.
+- GitHub Actions run `37215906544` for commit `db3b49fc720ed1e939c4581a6a45d0fe7deaeacb` — backend tests PASS, frontend lint/build PASS, and production-container build PASS.
 
 ### Review
 
@@ -1835,24 +1836,25 @@ If they disagree, investigate and correct the discrepancy.
 
 - `backend/.venv/Scripts/python.exe -m pytest` — PASS; 35 tests passed.
 - Pylance diagnostics reviewed; the backend virtual environment imports PyMongo successfully, while workspace-selected Pylance still reports its previously documented unresolved PyMongo import. Two unused test-parameter diagnostics were corrected.
-- Remote GitHub Actions rerun against this fix — Pending.
+- GitHub Actions run `37215906544` — PASS; backend, frontend, and production-container jobs all succeeded without MongoDB credentials.
 
 ### Review
 
 - **Reviewer:** AI Agent
-- **Review status:** IN PROGRESS
+- **Review status:** REVIEWED
 - **Review notes:** Lazy repository construction keeps persistence separated from routes while ensuring FastAPI request validation is not masked by unavailable database configuration.
 
 ### Git
 
-- **Commit:** Pending.
+- **Commit:** `db3b49fc720ed1e939c4581a6a45d0fe7deaeacb` (`fix: defer MongoDB access until request validation`).
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; `origin/main` verified at the fix commit.
 
 ### Issues / Notes
 
 - The root cause was confirmed from failed GitHub Actions logs: invalid household creates and malformed household IDs received 503 in CI because the repository dependency loaded settings before request validation completed. Local `.env` availability had masked the failure in earlier test runs.
+- The corrected behavior and whole test suite were verified locally and by GitHub Actions without database credentials.
 
 ### Next Step
 
-- Commit and push the fix, confirm CI passes without MongoDB credentials, then proceed to Phase 2 inventory.
+- Proceed to Phase 2 inventory; the CI regression is resolved.
