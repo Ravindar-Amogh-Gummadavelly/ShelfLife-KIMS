@@ -1530,6 +1530,16 @@ If they disagree, investigate and correct the discrepancy.
 - Live backend health check without credentials — basic health HTTP 200; database health HTTP 503 with a generic configuration error.
 - Real Atlas ping — NOT RUN; no local `.env` or MongoDB environment variables were available.
 
+### Real Atlas Verification Update — 2026-10-04
+
+- Confirmed real MongoDB Atlas user authentication and network access succeed.
+- Confirmed the backend loads `MONGODB_URI` and `MONGODB_DATABASE` from the local `.env` file without exposing their values.
+- Confirmed a direct PyMongo `ping()` succeeds against Atlas.
+- Confirmed `GET /api/health/db` returns HTTP 200 with `{"status":"ok"}`.
+- The original 10-test backend suite and frontend lint/build checks recorded above passed; this update records the separately completed live Atlas verification.
+- Confirmed `.env` remains ignored and is not staged or committed.
+- No credentials, connection strings, or secret values were exposed or recorded.
+
 ### Review
 
 - **Reviewer:** AI Agent
@@ -1546,7 +1556,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - No MongoDB URI or credentials are recorded in this logbook or README.
 - `.env.example` already contained empty MongoDB placeholders and was verified unchanged; `.env` remains ignored.
-- Real Atlas connectivity remains pending until local credentials are securely configured.
+- The initial implementation-time Atlas check could not run because local credentials were not configured then; the real connection was subsequently verified as recorded above.
 
 ### Next Step
 
