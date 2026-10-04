@@ -1684,3 +1684,62 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Stop after SL-006; wait for instruction before implementing another Phase 2 milestone.
+
+## [SL-007] Household Setup and Kitchen Home Frontend
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 2 - Household Memory + Inventory
+- **Status:** COMPLETED
+- **Type:** Feature / Frontend Integration
+- **Performed by:** AI Agent
+- **Objective:** Make household creation, member food profiles, and the existing household API usable from the React frontend without implementing inventory functionality.
+
+### Work Performed
+
+- Replaced the static frontend shell with a household setup flow, Kitchen Home, household/member profile view, and household navigation.
+- Added API client methods and response/request types for household creation/retrieval, adding members, and updating member food profiles. API failures are presented with non-sensitive, user-facing messages and submissions expose loading/disabled states.
+- Added member forms for allergies, prohibited foods, dietary restrictions, dislikes, preferred foods, spice level, texture preferences, and cuisine preferences. Hard constraints and soft preferences are visually and structurally separate; duplicate labels are normalized in the UI and backend validation remains authoritative.
+- Persisted only the household ID in browser local storage so a later visit can retrieve the household through the API. This is not authentication or authorization.
+- Added an explicit Inventory "Coming soon" placeholder; no inventory behavior or other future-phase features were implemented.
+- Updated README with the current frontend flow and browser-local household ID behavior.
+
+### Files Changed
+
+- `README.md`
+- `frontend/src/App.tsx`
+- `frontend/src/App.css`
+- `frontend/src/index.css`
+- `frontend/src/services/api.ts`
+- `frontend/src/types/api.ts`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` - PASS; 31 tests passed. The existing API tests use deterministic fake repositories and do not require Atlas credentials.
+- `npm run lint` - PASS.
+- `npm run build` - PASS; TypeScript compilation and Vite production build.
+- Browser flow with a temporary in-memory API - PASS; created a household, added a member, displayed a hard constraint and soft preference, updated the spice preference, restored the household after reload, and confirmed Inventory remains a placeholder.
+- `git diff --check` - PASS.
+- Frontend Pylance/editor problems check - no errors reported.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** Frontend calls use the existing API service boundary and match the current household/member request and response fields. Local browser persistence stores only the household ID. Loading and API failures are visible, and no real secrets or new dependencies were added.
+
+### Git
+
+- **Feature commit:** `0943332d29f35200c93e4ca511f2fc30489c0f87` (`feat: add household setup frontend`).
+- **Branch:** `main`.
+- **GitHub push:** YES; `origin/main` was advanced to the feature commit. This completion record is committed and pushed separately.
+
+### Issues / Notes
+
+- No real Atlas-backed browser flow was run; browser interaction used an isolated in-memory API, while the backend suite separately verifies household routes with fake repositories.
+- At verification time, the pre-existing process listening on port 8000 exposed only the health routes in its OpenAPI document. It was not stopped or replaced; restart the current backend from this checkout before using the normal local frontend proxy for household requests.
+- No credentials were inspected or recorded, and `.env` remains untracked and ignored.
+
+### Next Step
+
+- Stop after SL-007; wait for instruction before implementing another Phase 2 milestone.
