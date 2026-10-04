@@ -1924,3 +1924,70 @@ If they disagree, investigate and correct the discrepancy.
 
 - Freshness windows are product defaults documented in README; no spoilage prediction is implied.
 - Full browser-level inventory interaction was not verified because the integrated browser became unresponsive during testing; the backend suite, frontend lint/build, and remote CI passed. Real Atlas inventory writes were not exercised.
+
+## [SL-011] Stabilize Local Frontend and Backend Runtime
+
+- **Date:** 2026-10-04
+- **Phase:** Phase 1 — Foundation maintenance / Phase 2 — Runtime verification
+- **Status:** REVIEWED
+- **Type:** Bug Fix / Reliability / Verification
+- **Performed by:** AI Agent
+- **Objective:** Diagnose the local frontend/backend runtime mismatch, improve safe frontend API error reporting, and verify the existing household and inventory flows against the real local API and Atlas configuration.
+
+### Work Performed
+
+- Confirmed an earlier backend listener on port 8000 was launched with the global Python command instead of the project virtual-environment interpreter. Stopped that exact listener and restarted FastAPI through `backend/.venv/Scripts/python.exe`; the virtual-environment interpreter and installed FastAPI/PyMongo imports were verified without inspecting credentials.
+- Confirmed Vite had been bound only to IPv6 loopback while its API proxy targets IPv4. Configured Vite to bind `127.0.0.1` and fail clearly rather than silently choosing another port.
+- Separated frontend network failures from HTTP failures and added safe, status-specific messages for validation, not-found, conflict, server, and temporary-unavailability responses. Server response bodies and connection details are not surfaced to the user.
+- Added dependency-free Node tests for API error categories and secret-safe messages, plus the `npm test` script.
+- Updated local setup instructions to use the project virtual environment and the stable Vite URL.
+- Verified real-browser household creation, member creation, profile update, and reload persistence through the actual frontend, FastAPI API, and Atlas configuration. Verified the saved allergy and preferred foods without displaying sensitive configuration.
+- Verified browser inventory creation with an expiring date, editing and persistence after reload, partial and full consumption, consumption history, and UI deletion.
+- One exploratory profile-update request included a household-only field and correctly returned HTTP 422; the corrected profile-only request returned HTTP 200.
+- Removed only the uniquely identified temporary browser-test household and its associated inventory from Atlas; verified the household and inventory records were absent and cleared the browser's saved test household ID.
+- Confirmed `.env` remains ignored and is not tracked. No credential values were printed or recorded.
+
+### Files Changed
+
+- `README.md`
+- `frontend/package.json`
+- `frontend/src/services/api.ts`
+- `frontend/src/services/apiErrors.ts`
+- `frontend/src/services/apiErrors.test.mjs`
+- `frontend/vite.config.ts`
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 67 tests passed.
+- `npm test` — PASS; 3 tests passed.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; TypeScript compilation and Vite production build.
+- Venv-started live FastAPI `GET /api/health` — HTTP 200, `{"status":"ok"}`.
+- Venv-started live FastAPI `GET /api/health/db` — HTTP 200, `{"status":"ok"}`; real Atlas ping succeeded.
+- Real-browser household, profile, reload, inventory, consumption-history, and deletion flow — PASS; requests used the actual API with no mocks or interception.
+- Test-data cleanup — PASS; the exact temporary household and associated inventory were absent afterward.
+- `.env` ignore/tracking checks — PASS; ignored and not tracked.
+- `git diff --check` — PASS.
+- GitHub Actions — pending push.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** Changes are restricted to local server binding/documentation and frontend network/HTTP error messaging. Backend behavior, database implementation, API contracts, and product features were not changed.
+
+### Git
+
+- **Commit:** Pending.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- The integrated browser connection was unavailable, so real-browser checks used a dedicated local headless Edge session with direct control of the visible page; application API requests were not mocked or intercepted.
+- An existing Starlette `TestClient` deprecation warning remains; all tests pass and no warning-only dependency was added.
+
+### Next Step
+
+- Commit and push the verified changes, then confirm remote CI and clean branch synchronization.

@@ -24,7 +24,7 @@ logbook.md                Development history
 
 ## Development setup
 
-Requirements: Node.js with npm, Python 3.12 or newer, and MongoDB Atlas for database-backed development.
+Requirements: Node.js 22.6 or newer with npm, Python 3.12 or newer, and MongoDB Atlas for database-backed development.
 
 ### Frontend
 
@@ -34,7 +34,9 @@ npm install
 npm run dev
 ```
 
-Vite prints the local URL after the development server starts.
+Vite serves the app at `http://127.0.0.1:5173` and proxies `/api` to
+`http://127.0.0.1:8000`. It uses a strict port so startup fails clearly if
+that address is already in use.
 
 ### Backend
 
@@ -42,8 +44,8 @@ Vite prints the local URL after the development server starts.
 cd backend
 py -m venv .venv
 .venv\Scripts\Activate.ps1
-python -m pip install -r requirements-dev.txt
-python -m uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 The health endpoint is available at `http://127.0.0.1:8000/api/health`.
@@ -83,12 +85,23 @@ seven days ahead are `USE_SOON`, and later dates (or no expiry date) are
 `FRESH`. These labels are visibility cues; ShelfLife does not yet predict
 spoilage or recommend recipes.
 
-### Backend tests
+### Frontend checks
 
-From the `backend/` directory, with the virtual environment activated:
+From the repository root:
 
 ```powershell
-python -m pytest
+cd frontend
+npm test
+npm run lint
+npm run build
+```
+
+### Backend tests
+
+From the repository root:
+
+```powershell
+.\backend\.venv\Scripts\python.exe -m pytest
 ```
 
 ## Production deployment

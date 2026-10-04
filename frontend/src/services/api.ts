@@ -8,6 +8,10 @@ import type {
   InventoryItem,
   MemberFoodProfile,
 } from '../types/api'
+import {
+  messageForHttpStatus,
+  NETWORK_ERROR_MESSAGE,
+} from './apiErrors'
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(
   /\/$/,
@@ -35,22 +39,11 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
       },
     })
   } catch {
-    throw new ApiError(
-      'ShelfLife could not reach the server. Check that the backend is running and try again.',
-    )
+    throw new ApiError(NETWORK_ERROR_MESSAGE)
   }
 
   if (!response.ok) {
-    const messages: Record<number, string> = {
-      404: 'That household or member could not be found. Please refresh and try again.',
-      422: 'Please review the form. Some information is missing or invalid.',
-      503: 'Household storage is temporarily unavailable. Please try again shortly.',
-    }
-    throw new ApiError(
-      messages[response.status] ??
-        'Something went wrong while saving your changes. Please try again.',
-      response.status,
-    )
+    throw new ApiError(messageForHttpStatus(response.status), response.status)
   }
 
   return response
