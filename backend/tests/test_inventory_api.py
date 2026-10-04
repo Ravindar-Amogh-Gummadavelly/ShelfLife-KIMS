@@ -166,7 +166,10 @@ def test_create_inventory_rejects_invalid_values(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_inventory_requires_an_existing_household(client: TestClient) -> None:
+def test_inventory_requires_an_existing_household(
+    client: TestClient,
+    repositories: FakeInventoryRepository,
+) -> None:
     missing_id = uuid4()
 
     response = client.post(
@@ -176,6 +179,7 @@ def test_inventory_requires_an_existing_household(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json() == {"detail": "Household not found"}
+    assert repositories.items == {}
 
 
 def test_update_inventory_item(
