@@ -1627,7 +1627,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - **Date:** 2026-10-04
 - **Phase:** Phase 2 — Household Memory + Inventory
-- **Status:** TESTED
+- **Status:** COMPLETED
 - **Type:** Feature / Validation
 - **Performed by:** AI Agent
 - **Objective:** Extend the SL-005 household/member data foundation with explicit hard-constraint and soft-preference fields, deterministic validation/classification, and member food-profile updates.
@@ -1672,9 +1672,9 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
-- **Commit:** Pending commit after final diff review.
+- **Commit:** `7dd170f` (`feat: add structured household member food profiles`).
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; `origin/main` verified at the feature commit. The final completion record is committed and pushed separately.
 
 ### Issues / Notes
 
