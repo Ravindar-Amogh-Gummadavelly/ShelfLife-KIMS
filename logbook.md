@@ -1992,3 +1992,64 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Stop after this runtime verification and wait for the next instruction.
+
+## [SL-012] Reverify Local Runtime and Real Browser Flow
+
+- **Date:** 2026-10-05
+- **Phase:** Phase 1 — Foundation maintenance / Phase 2 — Runtime verification
+- **Status:** TESTED
+- **Type:** Runtime Verification
+- **Performed by:** AI Agent
+- **Objective:** Independently verify the current checkout's frontend, FastAPI, and Atlas path, including the complete household/member/inventory browser workflow, without mocked API responses.
+
+### Work Performed
+
+- Re-read `master.md`, `logbook.md`, and `README.md`; verified current `main` was clean and synchronized with `origin/main` at the SL-011 completion commit.
+- At inspection time, neither port 8000 nor 5173 had a listener. The integrated browser bridge failed to connect over CDP; this was a browser-tool connection failure, not evidence of an application rendering failure.
+- Started FastAPI explicitly using `backend/.venv/Scripts/python.exe` and Vite using the configured `127.0.0.1` host. Confirmed both health routes returned HTTP 200, including a real Atlas ping; confirmed registered OpenAPI routes and that Vite's `/api` proxy reached FastAPI.
+- Verified the local `.env` exists and both MongoDB settings are configured by printing only boolean presence; never displayed credential values.
+- Used a separate isolated local Edge session after the integrated browser bridge timed out. No API interception or mocks were used.
+- Through the real UI, created a uniquely named household, added a member with a peanuts allergy and lentils preference, saved and edited the preference to rice, and confirmed household/profile data restored after page reload.
+- Through the real UI, created an expiring four-bunch spinach item, edited its name, and confirmed it persisted after reload. Recorded consumption of 1.25 and 2.75 bunches; verified zero remaining, used-up state, and both history entries. Deleted the item and confirmed the actual API returned an empty inventory.
+- Removed the uniquely identified temporary household and verified no household or inventory document remained. Cleared the browser's saved household ID and stopped the exact local backend, Vite, and isolated browser processes.
+- Confirmed `.env` remains ignored and is not tracked. No credentials were exposed.
+- No application-code change was needed; the committed SL-011 runtime and API error-handling fixes are present and operational.
+
+### Files Changed
+
+- `logbook.md`
+
+### Testing
+
+- `backend/.venv/Scripts/python.exe -m pytest` — PASS; 67 tests passed.
+- `npm test` — PASS; 3 tests passed.
+- `npm run lint` — PASS.
+- `npm run build` — PASS; TypeScript compilation and production build.
+- Live `GET /api/health` — HTTP 200, `{"status":"ok"}`.
+- Live `GET /api/health/db` — HTTP 200, `{"status":"ok"}`; real Atlas ping succeeded.
+- Live Vite `/` and `/api/health` proxy — HTTP 200.
+- OpenAPI route inspection — household, member, inventory, and health routes registered.
+- Real isolated-browser household/member/profile/reload/inventory/consumption/history/delete flow — PASS, no mocked API.
+- Atlas test-data cleanup and verification — PASS.
+- `.env` ignore/tracking and `git diff --check` — PASS.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** The initial current-session browser failure was isolated to integrated browser/CDP connectivity. The application rendered and the full data-backed UI flow passed in a separate local Edge session. Existing landing UI presents household creation directly as “Create a kitchen” rather than a separate “Get Started” button; the complete onboarding flow remains available without adding an unrelated redesign.
+
+### Git
+
+- **Commit:** Pending.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- The existing Starlette `TestClient` deprecation warning remains; tests pass.
+- Live Render deployment remains unverified, as already documented under SL-008.
+
+### Next Step
+
+- Commit and push this verification record, verify remote synchronization, and stop pending further instructions.
