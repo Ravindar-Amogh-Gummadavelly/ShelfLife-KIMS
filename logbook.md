@@ -1397,7 +1397,7 @@ If they disagree, investigate and correct the discrepancy.
 
 - **Date:** 2026-10-04
 - **Phase:** Phase 1 — Foundation + Deployment
-- **Status:** IN PROGRESS
+- **Status:** COMPLETED
 - **Type:** Feature / Infrastructure
 - **Performed by:** AI Agent
 - **Objective:** Create the minimal React/Vite/TypeScript frontend shell, FastAPI health API and test, environment template, developer setup documentation, and foundation CI without implementing later-phase features.
@@ -1413,7 +1413,8 @@ If they disagree, investigate and correct the discrepancy.
 - Verified FastAPI imports and starts, `GET /api/health` returns HTTP 200 with `{"status":"ok"}`, the Vite `/api` proxy forwards successfully, and the pytest health test passes.
 - A first `npm ci` retry encountered a Windows file lock because the Vite development server was using a native module. After stopping the verified local dev-server processes, `npm ci` succeeded and lint/build passed again.
 - Confirmed `.env.example` is trackable, actual `.env` files are absent, and the app output/build/dependency/cache paths are ignored.
-- Final diff review is complete; commit and push are pending.
+- Reviewed the staged diff and confirmed it contains the application foundation, setup documentation, environment template, CI workflow, and this logbook record only.
+- Committed and pushed the foundation to `origin/main`; confirmed the remote branch head matches the feature commit.
 
 ### Files Changed
 
@@ -1428,6 +1429,8 @@ If they disagree, investigate and correct the discrepancy.
 - `backend/requirements-dev.txt`
 - `backend/requirements.txt`
 - `backend/tests/test_health.py`
+- `frontend/.gitignore`
+- `frontend/.oxlintrc.json`
 - `frontend/index.html`
 - `frontend/package-lock.json`
 - `frontend/package.json`
@@ -1459,6 +1462,7 @@ If they disagree, investigate and correct the discrepancy.
 - Ignore checks — `.env` and `.env.*` remain ignored, `.env.example` is not ignored, and generated build/dependency/cache paths are ignored. Project documentation remains trackable.
 - Secret review found no real `.env` files; `.env.example` contains only placeholder variable names.
 - `git diff --cached --check` — PASS.
+- Generic VS Code test discovery did not identify the Python pytest file; direct `python -m pytest` was run and passed.
 
 ### Review
 
@@ -1468,14 +1472,15 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
-- **Commit:** Pending.
+- **Commit:** `b9a8a74bcf976fdaeccefd2eae345496ba3e12aa` (`feat: create ShelfLife application foundation`).
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; `origin/main` verified at `b9a8a74bcf976fdaeccefd2eae345496ba3e12aa`.
 
 ### Issues / Notes
 
-- No real secrets or `.env` files are added.
+- No real secrets or `.env` files are added. `backend/.venv` is local and ignored.
+- `TestClient` emits a Starlette deprecation warning recommending `httpx2`; the health test passes. No extra dependency was added solely to suppress the warning.
 
 ### Next Step
 
-- Generate the frontend scaffold, run the requested checks, review the diff, then commit and push if all validations pass.
+- Stop after this foundation milestone; wait for instructions before beginning another Phase 1 task.
