@@ -2055,3 +2055,63 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Stop after this runtime verification and wait for further instructions.
+
+## [SL-013] Diagnose Render MongoDB Connectivity
+
+- **Date:** 2026-10-05
+- **Phase:** Phase 1 — Foundation + Deployment
+- **Status:** BLOCKED
+- **Type:** Production Deployment Diagnosis
+- **Performed by:** AI Agent
+- **Objective:** Identify and resolve the production database failure without adding product features or exposing credentials.
+
+### Work Performed
+
+- Read the project specification, development history, and README, then inspected the Render Blueprint, Dockerfile, frontend API configuration, FastAPI startup, and MongoDB settings/health path.
+- Confirmed the deployed frontend and `GET /api/health` return HTTP 200. `GET /api/health/db` returns HTTP 503 with `Database is unavailable`.
+- Render runtime logs showed successful `/api/health` requests and a failed `/api/health/db` request. The existing health handler suppressed the PyMongo exception, so the specific connection failure was not available in those logs.
+- Added a warning that records only the PyMongo exception class for a failed database ping. The exception message, URI, and credentials remain excluded from API responses and logs.
+- Confirmed production frontend requests use the same-origin `/api` path; Vite's localhost proxy applies only during development. Docker starts Uvicorn on Render's `PORT` (default 10000).
+- The code path reached MongoDB ping rather than the configuration-unavailable response, indicating non-empty database settings were read in the deployed process. Render dashboard variable values were not inspected.
+
+### Files Changed
+
+- `backend/app/api/health.py`
+- `backend/tests/test_health.py`
+- `logbook.md`
+
+### Testing
+
+- Backend pytest — PASS; 67 tests.
+- Frontend `npm test` — PASS; 3 tests.
+- Frontend `npm run lint` — PASS.
+- Frontend `npm run build` — PASS.
+- `git diff --check` — PASS.
+- GitHub Actions run #23, including frontend, backend, and production-container jobs — PASS.
+- Production `/api/health` — HTTP 200.
+- Production `/api/health/db` — HTTP 503; live Atlas connectivity is not verified.
+- `.env` remains ignored and untracked; no credentials were printed or logged.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** The change is limited to sanitized server-side diagnostic logging and a regression assertion that exception details are not logged. No frontend behavior, database behavior, API response, or product feature was changed.
+
+### Git
+
+- **Diagnostic commit:** `031412e0d7ea332d49a2d6950de9057901367411` (`fix: log safe MongoDB health failure category`).
+- **Branch:** `main`, tracking `origin/main`.
+- **GitHub push:** YES.
+- **GitHub Actions:** Run #23 passed.
+
+### Issues / Notes
+
+- **Blocker:** The exact PyMongo failure class from the new log statement has not yet been obtained, and the live database health check still fails. Network allowlisting, invalid credentials, and other connection causes cannot be distinguished from the current HTTP response.
+- The Render Blueprint/dashboard indicates manual synchronization/deployment; deployment of the diagnostic commit must be confirmed before its runtime log can be used.
+- The local `.env` is not copied into the production image. Required production settings are `MONGODB_URI` and `MONGODB_DATABASE`, configured in the Render service environment; their values must never be shared in chat.
+- No change to Atlas network access or Render secret configuration was made without evidence of the precise failure.
+
+### Next Step
+
+- Confirm the Render service is running commit `031412e`, read only the safe PyMongo exception class from runtime logs, then apply the smallest required Atlas or Render configuration correction and recheck `/api/health/db`.
