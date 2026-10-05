@@ -2115,3 +2115,11 @@ If they disagree, investigate and correct the discrepancy.
 ### Next Step
 
 - Confirm the Render service is running commit `031412e`, read only the safe PyMongo exception class from runtime logs, then apply the smallest required Atlas or Render configuration correction and recheck `/api/health/db`.
+
+### Diagnosis Update — 2026-10-05
+
+- The owner supplied the sanitized Render log category: `ServerSelectionTimeoutError`.
+- This establishes that PyMongo did not discover/reach a MongoDB server before authentication. It is consistent with a network reachability issue, including an Atlas Network Access list that does not include Render's outbound addresses; the exception class alone does not prove that is the only possible cause.
+- Authentication failure is not established by this evidence. Do not change credentials or weaken Atlas access controls based on this exception alone.
+- **Current status remains BLOCKED:** Atlas cluster status and its Network Access list have not been verified, and production `/api/health/db` has not yet returned HTTP 200.
+- Human action: verify the Atlas cluster is running and allow the Render service's outbound IP addresses in Atlas Network Access. Obtain those addresses from the Render service details; do not use a broad `0.0.0.0/0` rule as a default fix. Then retry `/api/health/db`.
