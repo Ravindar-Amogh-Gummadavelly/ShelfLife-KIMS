@@ -2123,3 +2123,4 @@ If they disagree, investigate and correct the discrepancy.
 - Authentication failure is not established by this evidence. Do not change credentials or weaken Atlas access controls based on this exception alone.
 - **Current status remains BLOCKED:** Atlas cluster status and its Network Access list have not been verified, and production `/api/health/db` has not yet returned HTTP 200.
 - Human action: verify the Atlas cluster is running and allow the Render service's outbound IP addresses in Atlas Network Access. Obtain those addresses from the Render service details; do not use a broad `0.0.0.0/0` rule as a default fix. Then retry `/api/health/db`.
+- The owner reports they cannot currently access Atlas or Render settings, so the required network/configuration verification remains blocked on an account administrator.
