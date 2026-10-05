@@ -2166,9 +2166,9 @@ If they disagree, investigate and correct the discrepancy.
 
 ### Git
 
-- **Commit:** Pending final logbook reference update.
+- **Commit:** `85ffdc263d3435c55dc3dafab214cbcf10f95439` (`docs: record local demo runtime setup`).
 - **Branch:** `main`.
-- **GitHub push:** Pending.
+- **GitHub push:** YES; verified `main` and `origin/main` match.
 
 ### Issues / Notes
 
