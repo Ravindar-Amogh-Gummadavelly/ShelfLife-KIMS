@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 from unittest.mock import MagicMock, Mock, call
 
@@ -40,6 +41,7 @@ def test_database_health_endpoint_returns_ok_when_ping_succeeds(
 def test_database_health_endpoint_returns_503_when_ping_fails(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     database = Mock(spec=MongoDatabase)
     database.ping.side_effect = ServerSelectionTimeoutError(
@@ -47,10 +49,14 @@ def test_database_health_endpoint_returns_503_when_ping_fails(
     )
     monkeypatch.setitem(app.dependency_overrides, get_database, lambda: database)
 
-    response = client.get("/api/health/db")
+    with caplog.at_level(logging.WARNING, logger="app.api.health"):
+        response = client.get("/api/health/db")
+
     assert response.status_code == 503
     assert response.json() == {"detail": "Database is unavailable"}
     assert "private connection detail" not in response.text
+    assert "ServerSelectionTimeoutError" in caplog.text
+    assert "private connection detail" not in caplog.text
 
 
 def test_database_health_reuses_client_between_requests(
