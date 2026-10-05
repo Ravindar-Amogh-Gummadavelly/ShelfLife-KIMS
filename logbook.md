@@ -2124,3 +2124,60 @@ If they disagree, investigate and correct the discrepancy.
 - **Current status remains BLOCKED:** Atlas cluster status and its Network Access list have not been verified, and production `/api/health/db` has not yet returned HTTP 200.
 - Human action: verify the Atlas cluster is running and allow the Render service's outbound IP addresses in Atlas Network Access. Obtain those addresses from the Render service details; do not use a broad `0.0.0.0/0` rule as a default fix. Then retry `/api/health/db`.
 - The owner reports they cannot currently access Atlas or Render settings, so the required network/configuration verification remains blocked on an account administrator.
+
+## [SL-014] Prepare Local Demo Runtime
+
+- **Date:** 2026-10-05
+- **Phase:** Phase 2 — Local demo runtime verification
+- **Status:** TESTED
+- **Type:** Local Environment / Runtime Verification
+- **Performed by:** AI Agent
+- **Objective:** Restore a database-backed local ShelfLife demo without continuing Render troubleshooting or changing application features.
+
+### Work Performed
+
+- Confirmed the local React/Vite and FastAPI servers were running, while local Atlas requests had begun failing with `ServerSelectionTimeoutError`.
+- Started the installed Docker Desktop engine and a MongoDB 8 container named `shelflife-demo-mongo`, publishing MongoDB only on `127.0.0.1:27017` and using the local Docker volume `shelflife-demo-data`.
+- Restarted only the local FastAPI process with process-scoped `MONGODB_URI=mongodb://127.0.0.1:27017` and `MONGODB_DATABASE=shelflife_demo`. The existing local `.env` and Atlas credential were not read into command output or modified.
+- Created synthetic local demo data: Demo Kitchen, Demo Member, and spinach inventory. Verified profile update, inventory edit, partial consumption, and saved consumption history through the existing API.
+- Left the local frontend, backend, Docker engine, and local MongoDB container running for recording. Render deployment troubleshooting remains paused.
+
+### Files Changed
+
+- `logbook.md`
+
+### Testing
+
+- Local `GET /api/health` — HTTP 200.
+- Local `GET /api/health/db` — HTTP 200 using the local MongoDB container.
+- Vite frontend and `/api/health` proxy — HTTP 200.
+- Household create/retrieve — PASS.
+- Member profile update — PASS.
+- Inventory create/retrieve/edit — PASS.
+- Partial consumption and history persistence — PASS; 1.75 units remain after consuming 0.25 from 2 units.
+- `git diff --check` — PASS.
+- Integrated browser automation could not attach to the shared tab; owner should refresh the local frontend and visually confirm it reconnects before recording.
+
+### Review
+
+- **Reviewer:** AI Agent
+- **Review status:** REVIEWED
+- **Review notes:** No application code, dependency, or tracked configuration was changed. MongoDB is bound to IPv4 loopback only. Demo records are synthetic and stored in the local Docker volume, not Atlas.
+
+### Git
+
+- **Commit:** Pending final logbook reference update.
+- **Branch:** `main`.
+- **GitHub push:** Pending.
+
+### Issues / Notes
+
+- This local demo uses a local MongoDB instance rather than Atlas. Its demo data is isolated from the production database.
+- The saved `.env` was left untouched; its Atlas credentials were not output or used by the restarted backend process.
+- The local container and named volume persist until explicitly stopped/removed. Do not remove the volume before the recording if its synthetic demo data is needed.
+- This does not resolve the production Atlas `ServerSelectionTimeoutError`; Render deployment work remains paused pending account access.
+- The original local FastAPI process was stopped to switch its process-scoped database settings; the replacement FastAPI process is running successfully on port 8000.
+
+### Next Step
+
+- Refresh `http://127.0.0.1:5173/`. The old browser-saved household may not exist in the fresh local demo database; the app clears a saved ID when the API returns 404. Create or reconnect to a demo household, then record using synthetic data only.
